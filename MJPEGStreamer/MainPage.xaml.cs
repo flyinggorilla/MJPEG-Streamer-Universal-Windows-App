@@ -470,7 +470,8 @@ namespace MJPEGStreamer
             Debug.WriteLine("MediaFrameCapture initialized");
 
             var mediaFrameSource = _mediaCapture.FrameSources[selectedMediaFrameSourceInfo.Id];
-            var preferredFormat = mediaFrameSource.SupportedFormats.Where(format =>
+
+            /*var preferredFormat = mediaFrameSource.SupportedFormats.Where(format =>
             {
                 return format.VideoFormat.Width >= 1080
                 && format.Subtype.Equals(MediaEncodingSubtypes.Yuy2, StringComparison.OrdinalIgnoreCase);
@@ -491,7 +492,8 @@ namespace MJPEGStreamer
                 return;
             }
 
-           //################# await mediaFrameSource.SetFormatAsync(preferredFormat);
+           await mediaFrameSource.SetFormatAsync(preferredFormat);
+           */
 
             imageElement.Source = new SoftwareBitmapSource();
 
@@ -507,6 +509,7 @@ namespace MJPEGStreamer
 
             _isInitialized = true;
             UpdateCaptureControls();
+
 
         }
 
@@ -528,32 +531,7 @@ namespace MJPEGStreamer
             Debug.WriteLine("Target framerate: " + _frameRate + " Source framerate: " + _sourceFrameRate + " Skip frames count: " + _skipFrameCount);
         }
 
-        /// <summary>
-        /// Starts the preview and adjusts it for for rotation and mirroring after making a request to keep the screen on
-        /// </summary>
-        /// <returns></returns>
-        private async Task StartPreviewAsync()
-        {
-            // Prevent the device from sleeping while the preview is running
-            _displayRequest.RequestActive();
-
-
-        }
-
-        /// <summary>
-        /// Stops the preview and deactivates a display request, to allow the screen to go into power saving modes
-        /// </summary>
-        /// <returns></returns>
-        private async Task StopPreviewAsync()
-        {
-            // Use the dispatcher because this method is sometimes called from non-UI threads
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
-            {
-                // Cleanup the UI
-            });
-        }
-
-        /// <summary>
+          /// <summary>
         /// Cleans up the camera resources (after stopping any video recording and/or preview if necessary) and unregisters from MediaCapture events
         /// </summary>
         /// <returns></returns>
@@ -609,12 +587,13 @@ namespace MJPEGStreamer
                     {
                         await MJPEGStreamerInitAsync();
                         await InitializeCameraAsync();
-                        Debug.WriteLine("SetupBasedOnStateAsync -- Initialized stuff");
+
+                        // Prevent the device from sleeping while the preview is running
+                        _displayRequest.RequestActive();
                     }
                     else
                     {
                         await ShutdownAsync();
-                        Debug.WriteLine("SetupBasedOnStateAsync -- shutdown stuff");
                     }
                 };
                 _setupTask = setupAsync();

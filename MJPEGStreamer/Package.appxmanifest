@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" IgnorableNamespaces="uap mp">
-  <Identity Name="23433flyinggorilla.MJPEGStreamer" Publisher="CN=F0964185-1BB3-4354-B1F6-74747429BC81" Version="1.1.4.0" />
+  <Identity Name="23433flyinggorilla.MJPEGStreamer" Publisher="CN=F0964185-1BB3-4354-B1F6-74747429BC81" Version="1.1.5.0" />
   <mp:PhoneIdentity PhoneProductId="c1b68d6d-68c0-456c-9b83-cb39a531b44b" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
     <DisplayName>MJPEG Streamer</DisplayName>
