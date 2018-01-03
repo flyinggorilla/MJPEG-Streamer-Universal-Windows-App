@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2010
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MJPEGStreamer", "MJPEGStreamer\MJPEGStreamer.csproj", "{60261D6E-008C-4D9C-B468-65EA06FCBC9B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM = Debug|ARM
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|ARM = Release|ARM
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{60261D6E-008C-4D9C-B468-65EA06FCBC9B}.Debug|ARM.ActiveCfg = Debug|ARM
+		{60261D6E-008C-4D9C-B468-65EA06FCBC9B}.Debug|ARM.Build.0 = Debug|ARM
+		{60261D6E-008C-4D9C-B468-65EA06FCBC9B}.Debug|ARM.Deploy.0 = Debug|ARM
+		{60261D6E-008C-4D9C-B468-65EA06FCBC9B}.Debug|x64.ActiveCfg = Debug|x64
+		{60261D6E-008C-4D9C-B468-65EA06FCBC9B}.Debug|x64.Build.0 = Debug|x64
+		{60261D6E-008C-4D9C-B468-65EA06FCBC9B}.Debug|x64.Deploy.0 = Debug|x64
+		{60261D6E-008C-4D9C-B468-65EA06FCBC9B}.Debug|x86.ActiveCfg = Debug|x86
+		{60261D6E-008C-4D9C-B468-65EA06FCBC9B}.Debug|x86.Build.0 = Debug|x86
+		{60261D6E-008C-4D9C-B468-65EA06FCBC9B}.Debug|x86.Deploy.0 = Debug|x86
+		{60261D6E-008C-4D9C-B468-65EA06FCBC9B}.Release|ARM.ActiveCfg = Release|ARM
+		{60261D6E-008C-4D9C-B468-65EA06FCBC9B}.Release|ARM.Build.0 = Release|ARM
+		{60261D6E-008C-4D9C-B468-65EA06FCBC9B}.Release|ARM.Deploy.0 = Release|ARM
+		{60261D6E-008C-4D9C-B468-65EA06FCBC9B}.Release|x64.ActiveCfg = Release|x64
+		{60261D6E-008C-4D9C-B468-65EA06FCBC9B}.Release|x64.Build.0 = Release|x64
+		{60261D6E-008C-4D9C-B468-65EA06FCBC9B}.Release|x64.Deploy.0 = Release|x64
+		{60261D6E-008C-4D9C-B468-65EA06FCBC9B}.Release|x86.ActiveCfg = Release|x86
+		{60261D6E-008C-4D9C-B468-65EA06FCBC9B}.Release|x86.Build.0 = Release|x86
+		{60261D6E-008C-4D9C-B468-65EA06FCBC9B}.Release|x86.Deploy.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CF873E3E-C1E4-4E4B-B819-8B2CD3FE0EAB}
+	EndGlobalSection
+EndGlobal
