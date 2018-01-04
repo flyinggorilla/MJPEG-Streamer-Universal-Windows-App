@@ -4,8 +4,11 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel;
+using Windows.ApplicationModel.Background;
+using Windows.ApplicationModel.ExtendedExecution;
 using Windows.Devices.Enumeration;
 using Windows.Foundation;
+using Windows.Foundation.Collections;
 using Windows.Graphics.Imaging;
 using Windows.Media;
 using Windows.Media.Capture;
@@ -63,6 +66,8 @@ namespace MJPEGStreamer
         private ThreadPoolTimer _periodicTimerStreamingStatus;
         private int _skippedFrames;
         private double _sourceFrameRate;
+        private int _activityCounter;
+        private bool _setupBasedOnState;
         private const int _defaultPort = 8000;
 
         #region Constructor, lifecycle and navigation
@@ -80,7 +85,8 @@ namespace MJPEGStreamer
 
         private void Application_Suspending(object sender, SuspendingEventArgs e)
         {
-            _isSuspending = false;
+            Debug.WriteLine("###Suspending###");
+            _isSuspending = true;
 
             var deferral = e.SuspendingOperation.GetDeferral();
             var task = Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>
@@ -92,6 +98,7 @@ namespace MJPEGStreamer
 
         private void Application_Resuming(object sender, object o)
         {
+            Debug.WriteLine("###Resuming###");
             _isSuspending = false;
 
             var task = Dispatcher.RunAsync(CoreDispatcherPriority.High, async () =>
@@ -228,9 +235,59 @@ namespace MJPEGStreamer
                     Debug.WriteLine("   " + si.MediaStreamType.ToString() + " " + si.SourceKind.ToString());
                 }
 
-                await StartServer();
             }
 
+            ExtendedExecutionSession Session = new ExtendedExecutionSession();
+            Session.Reason = ExtendedExecutionReason.Unspecified;
+            Session.Description = "Streaming MJPEG";
+            Session.Revoked += SessionRevoked;
+            ExtendedExecutionResult result = await Session.RequestExtensionAsync();
+
+
+            var access = await BackgroundExecutionManager.RequestAccessAsync();
+
+            switch (access)
+            {
+                case BackgroundAccessStatus.Unspecified:
+                    Debug.WriteLine("BackgroundAccessStatus unspecified");
+                    break;
+                case BackgroundAccessStatus.DeniedBySystemPolicy:
+                    Debug.WriteLine("BackgroundAccessStatus denied by system policy");
+                    break;
+                case BackgroundAccessStatus.DeniedByUser:
+                    Debug.WriteLine("BackgroundAccessStatus denied by user");
+                    break;
+                case BackgroundAccessStatus.AlwaysAllowed:
+                    Debug.WriteLine("BackgroundAccessStatus always allowed");
+                    break;
+                case BackgroundAccessStatus.AllowedSubjectToSystemPolicy:
+                    Debug.WriteLine("BackgroundAccessStatus allowed subject to policy");
+                    break;
+                default:
+                    Debug.WriteLine("BackgroundAccessStatus something else" + (int)access);
+                    break;
+            }
+
+
+            var builder = new BackgroundTaskBuilder();
+            builder.Name = "MJPEGBackgroundStreamer";
+            builder.IsNetworkRequested = true;
+             ApplicationTrigger trigger = new ApplicationTrigger();
+             ValueSet valueSet = new ValueSet();
+             valueSet.Add("TestValue1", "val1");
+             builder.SetTrigger(trigger);
+             BackgroundTaskRegistration task = builder.Register();
+             Debug.WriteLine("registered builder");
+             await trigger.RequestAsync(valueSet);
+             Debug.WriteLine("awaited trigger");
+
+            await StartServer();
+
+        }
+
+        private void SessionRevoked(object sender, ExtendedExecutionRevokedEventArgs args)
+        {
+            throw new NotImplementedException();
         }
 
         private void Page_Loaded(object sender, RoutedEventArgs e)
@@ -269,43 +326,7 @@ namespace MJPEGStreamer
             /*
 
 
-            var access = await BackgroundExecutionManager.RequestAccessAsync();
-
-            switch (access)
-            {
-                case BackgroundAccessStatus.Unspecified:
-                    Debug.WriteLine("BackgroundAccessStatus unspecified");
-                    break;
-                case BackgroundAccessStatus.DeniedBySystemPolicy:
-                    Debug.WriteLine("BackgroundAccessStatus denied by system policy");
-                    break;
-                case BackgroundAccessStatus.DeniedByUser:
-                    Debug.WriteLine("BackgroundAccessStatus denied by user");
-                    break;
-                case BackgroundAccessStatus.AlwaysAllowed:
-                    Debug.WriteLine("BackgroundAccessStatus always allowed");
-                    break;
-                case BackgroundAccessStatus.AllowedSubjectToSystemPolicy:
-                    Debug.WriteLine("BackgroundAccessStatus allowed subject to policy");
-                    break;
-                default:
-                    Debug.WriteLine("BackgroundAccessStatus something else" + (int)access);
-                    break;
-            }
-
-
-            await CleanupCameraAsync();
-
-            var builder = new BackgroundTaskBuilder();
-            builder.Name = "MJPEGBackgroundStreamer";
-            builder.IsNetworkRequested = true;
-            ApplicationTrigger trigger = new ApplicationTrigger();
-            ValueSet valueSet = new ValueSet();
-            valueSet.Add("VideoDeviceId", _currentVideoDeviceId);
-            valueSet.Add("Test", "**testString**");
-            builder.SetTrigger(trigger);
-            BackgroundTaskRegistration task = builder.Register();
-            await trigger.RequestAsync(valueSet);
+           
             */
 
         }
@@ -322,8 +343,6 @@ namespace MJPEGStreamer
             var mediaFrameReference = sender.TryAcquireLatestFrame();
             var videoMediaFrame = mediaFrameReference?.VideoMediaFrame;
             var softwareBitmap = videoMediaFrame?.SoftwareBitmap;
-
-            //Debug.WriteLine("FrameArrived Event");
 
             if (softwareBitmap != null)
             {
@@ -343,6 +362,16 @@ namespace MJPEGStreamer
 
                 bitmapEncoder.SetSoftwareBitmap(softwareBitmap);
                 await bitmapEncoder.FlushAsync();
+
+                
+                if (_activityCounter++ > 50)
+                {
+                    Debug.WriteLine(".");
+                    _activityCounter = 0;
+                }
+
+                else
+                    Debug.Write(".");
 
                 Interlocked.Exchange(ref _jpegStreamBuffer, jpegStream);
 
@@ -537,7 +566,7 @@ namespace MJPEGStreamer
         /// <returns></returns>
         private async Task ShutdownAsync()
         {
-            Debug.WriteLine("CleanupCameraAsync");
+            Debug.WriteLine("ShutdownAsync" , new System.Diagnostics.StackTrace().ToString());
 
             if (_isInitialized)
             {
@@ -564,7 +593,7 @@ namespace MJPEGStreamer
         private async Task SetUpBasedOnStateAsync()
         {
 
-
+            Debug.WriteLine("Entering SetupBasedOnStateAsync()");
             // Avoid reentrancy: Wait until nobody else is in this function.
             while (!_setupTask.IsCompleted)
             {
@@ -575,29 +604,34 @@ namespace MJPEGStreamer
             // * We are the current active page.
             // * The window is visible.
             // * The app is not suspending.
-            bool wantUIActive = _isActivePage && Window.Current.Visible && !_isSuspending;
+            bool previewEnabled = _isActivePage && Window.Current.Visible && !_isSuspending;
 
-            if (_isUIActive != wantUIActive)
+            if (_previewVideoEnabled != previewEnabled)
             {
-                _isUIActive = wantUIActive;
-
-                Func<Task> setupAsync = async () =>
-                {
-                    if (wantUIActive)
-                    {
-                        await MJPEGStreamerInitAsync();
-                        await InitializeCameraAsync();
-
-                        // Prevent the device from sleeping while the preview is running
-                        _displayRequest.RequestActive();
-                    }
-                    else
-                    {
-                        await ShutdownAsync();
-                    }
-                };
-                _setupTask = setupAsync();
+                _previewVideoEnabled = previewEnabled;
+                PreviewToggleSwitch.IsOn = previewEnabled;               
             }
+
+            Func<Task> setupAsync = async () =>
+            {
+                if (_isSuspending)
+                {
+                    _setupBasedOnState = false;
+                    await ShutdownAsync();
+                }
+                else if (!_setupBasedOnState)
+                {
+                    _setupBasedOnState = true;
+                    await MJPEGStreamerInitAsync();
+                    await InitializeCameraAsync();
+
+                    // Prevent the device from sleeping while the preview is running
+                    _displayRequest.RequestActive();
+
+                }
+            };
+
+            _setupTask = setupAsync();
 
             await _setupTask;
 

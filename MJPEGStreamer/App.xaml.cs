@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
@@ -15,6 +16,7 @@ using Windows.Media.Capture;
 using Windows.Media.MediaProperties;
 using Windows.Storage;
 using Windows.Storage.Streams;
+using Windows.UI;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Controls.Primitives;
@@ -29,9 +31,7 @@ namespace MJPEGStreamer
     /// Provides application-specific behavior to supplement the default Application class.
     /// </summary>
     sealed partial class App : Application
-    
     {
-        Queue<InMemoryRandomAccessStream> _mjpegStreamQueue = new Queue<InMemoryRandomAccessStream>(10);
 
         /// <summary>
         /// Initializes the singleton application object.  This is the first line of authored code
@@ -42,80 +42,67 @@ namespace MJPEGStreamer
             this.InitializeComponent();
             this.Suspending += OnSuspending;
             this.Resuming += OnResuming;
+            this.EnteredBackground += OnEnteredBackground;
+            this.LeavingBackground += OnLeavingBackground;
         }
+
+        private void OnLeavingBackground(object sender, LeavingBackgroundEventArgs e)
+        {
+            Debug.WriteLine("Leaving Background: " + e);
+            Deferral deferral = e.GetDeferral();
+            deferral.Complete();
+        }
+
+        private void OnEnteredBackground(object sender, EnteredBackgroundEventArgs e)
+        {
+            Debug.WriteLine("Entering Background: " + e);
+            Deferral deferral = e.GetDeferral();
+            deferral.Complete();
+        }
+
+        // https://blogs.windows.com/buildingapps/2016/06/07/background-activity-with-the-single-process-model/
 
         protected override void OnBackgroundActivated(BackgroundActivatedEventArgs args)
         {
             base.OnBackgroundActivated(args);
             IBackgroundTaskInstance taskInstance = args.TaskInstance;
 
-         /*   Debug.WriteLine("Starting webserver");
-            //ImageStreamingServer imageStreamingServer = new ImageStreamingServer();
-            StartServer();
-            Debug.WriteLine("Started webserver");
-
-            MediaCapture mediaCapture = new MediaCapture();
-            ApplicationDataContainer _localSettings = ApplicationData.Current.LocalSettings;
-
-
-            MediaCaptureInitializationSettings mediaSettings = new MediaCaptureInitializationSettings();
-            Object setting = _localSettings.Values["CurrentVideoDeviceId"];
-            if (setting == null)
-            {
-                Debug.WriteLine("ERORR: no webcam configured");
-                return;
-      
-            } 
-            mediaSettings.VideoDeviceId = setting.ToString();
-            mediaSettings.StreamingCaptureMode = StreamingCaptureMode.Video;
-            Debug.WriteLine("VideoDeviceId {0}", setting.ToString());
-
-            DeviceInformationCollection allVideoDevices = DeviceInformation.FindAllAsync(DeviceClass.VideoCapture).GetResults();
+            Debug.WriteLine("OnBackgroundActivated Called");
+            /*ApplicationTriggerDetails triggerDetails = (ApplicationTriggerDetails)taskInstance.TriggerDetails;
+            ValueSet valueSet = triggerDetails?.Arguments;
             
-            foreach (DeviceInformation di in allVideoDevices)
+            Debug.WriteLine("Trigger Details class: " + valueSet?.ToString());
+
+            Frame rootFrame = (Frame)Window.Current.Content;
+            if (rootFrame == null || rootFrame.Content.GetType() != typeof(MainPage))
             {
-                if (di.Equals(mediaSettings.VideoDeviceId))
+                Debug.WriteLine("MainPage missing or invalid");
+                return;
+            }
+
+            MainPage mainPage = (MainPage)rootFrame.Content;
+            mainPage.Foreground = new SolidColorBrush(Colors.Purple);/*
+
+             /*int i = 0;
+            while (true)
+            {
+                if (i++ > 50)
                 {
-                    Debug.WriteLine("Video Device found: {0}", di.Name);
+                    Debug.WriteLine(".");
+                    i = 0;
                 }
-            }
 
+                else
+                    Debug.Write(".");
 
-            // Initialize MediaCapture
-            try
-            {
-                mediaCapture.InitializeAsync(mediaSettings).GetResults();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                Debug.WriteLine("The app was denied access to the camera");
-            }
+                Thread.Sleep(1000);
+            }*/
 
-            Debug.WriteLine("mediaCapture initialized {0}", mediaSettings.VideoDeviceId);
+            // Task.Run(async () => { await mainPage.StartServer(); });
 
-            var stream = new InMemoryRandomAccessStream();
-
-            while(true)
-            {
-                mediaCapture.CapturePhotoToStreamAsync(ImageEncodingProperties.CreateJpeg(), stream).GetResults();
-
-                try
-                {
-                    if (_mjpegStreamQueue.Count < 10)
-                    {
-                        _mjpegStreamQueue.Enqueue(stream);
-                    }
-                    //Debug.WriteLine("Enqueuing steam. Count in queue:" + _mjpegStreamQueue.Count);
-                }
-                catch (Exception ex)
-                {
-                    // File I/O errors are reported as exceptions
-                    Debug.WriteLine("Exception when taking a photo: " + ex.ToString());
-                }
-                Task.Delay(1000).Wait();
-            }
-*/
         }
+
+        
 
 
 

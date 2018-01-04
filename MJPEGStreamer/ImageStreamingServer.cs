@@ -19,13 +19,15 @@ namespace MJPEGStreamer
         private StreamSocketListener _listener;
         private int _activeStreams = 0;
 
-        async private Task StartServer()
+        async public Task StartServer()
         {
             if (_isServerStarted)
             {
+                Debug.WriteLine("Webserver already running.");
                 return;
             }
             _isServerStarted = true;
+            Debug.WriteLine("Webserver is being started.");
 
             try
             {
@@ -52,12 +54,24 @@ namespace MJPEGStreamer
             {
 
                 Debug.WriteLine("Got connection");
-                using (IInputStream input = e.Socket.InputStream)
+
+                string request;
+                using (var streamReader = new StreamReader(e.Socket.InputStream.AsStreamForRead()))
+                {
+                    request = await streamReader.ReadLineAsync();
+                    Debug.WriteLine(request);
+                }
+
+                /*using (IInputStream input = e.Socket.InputStream)
                 {
                     var buffer = new Windows.Storage.Streams.Buffer(2);
                     await input.ReadAsync(buffer, buffer.Capacity, InputStreamOptions.Partial);
-                    Debug.WriteLine(buffer.ToString());
-                }
+
+
+                    //System.Web.HttpUtility.
+                    System.Uri uri;
+                    //uri.
+                }*/
 
                 using (IOutputStream output = e.Socket.OutputStream)
                 {
