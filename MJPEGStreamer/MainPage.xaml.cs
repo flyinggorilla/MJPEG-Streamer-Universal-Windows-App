@@ -243,26 +243,6 @@ namespace MJPEGStreamer
 
             }
 
-            ExtendedExecutionSession session = new ExtendedExecutionSession();
-            session.Reason = ExtendedExecutionReason.Unspecified;
-            session.Description = "Streaming MJPEG";
-            session.Revoked += SessionRevoked;
-            ExtendedExecutionResult result = await session.RequestExtensionAsync();
-
-            switch (result)
-            {
-                case ExtendedExecutionResult.Allowed:
-                    Debug.WriteLine("Extended execution allowed.");
-                    _extendedExecutionSession = session;
-                    break;
-
-                default:
-                case ExtendedExecutionResult.Denied:
-                    Debug.WriteLine("Extended execution denied.");
-                    session.Dispose();
-                    break;
-            }
-
             await StartServer();
             _mjpegStreamerIsInitializing = false;
 
@@ -461,30 +441,6 @@ namespace MJPEGStreamer
 
             var mediaFrameSource = _mediaCapture.FrameSources[selectedMediaFrameSourceInfo.Id];
 
-            /*var preferredFormat = mediaFrameSource.SupportedFormats.Where(format =>
-            {
-                return format.VideoFormat.Width >= 1080
-                && format.Subtype.Equals(MediaEncodingSubtypes.Yuy2, StringComparison.OrdinalIgnoreCase);
-
-            }).FirstOrDefault();
-
-
-            var sf = mediaFrameSource.SupportedFormats;
-
-            foreach (MediaFrameFormat mf in sf)
-            {
-                Debug.WriteLine("MajorType:{0} Subtype:{1} FrameRate:{2} Width:{3} Height:{4}", mf.MajorType, mf.Subtype, mf.FrameRate.Numerator, mf.VideoFormat.Width, mf.VideoFormat.Height);
-            }
-
-            if (preferredFormat == null)
-            {
-                Debug.WriteLine("Preferred Format not supported- EXITING");                // Our desired format is not supported
-                return;
-            }
-
-           await mediaFrameSource.SetFormatAsync(preferredFormat);
-           */
-
             imageElement.Source = new SoftwareBitmapSource();
 
             MediaRatio mediaRatio = mediaFrameSource.CurrentFormat.VideoFormat.MediaFrameFormat.FrameRate;
@@ -574,18 +530,17 @@ namespace MJPEGStreamer
             // * We are the current active page.
             // * The window is visible.
             // * The app is not suspending.
-            bool previewEnabled = _isActivePage && Window.Current.Visible && !_isSuspending;
+            bool show = _isActivePage && Window.Current.Visible && !_isSuspending;
 
-            if (_previewVideoEnabled != previewEnabled)
+            if (_previewVideoEnabled != show)
             {
-                _previewVideoEnabled = previewEnabled;
-                PreviewToggleSwitch.IsOn = previewEnabled;               
+                _previewVideoEnabled = show;
+                PreviewToggleSwitch.IsOn = show;               
             }
 
             Func<Task> setupAsync = async () =>
             {
-                //if (!previewEnabled)
-                if(_isSuspending)
+                if(!show)
                 {
                     Debug.WriteLine("SetupBasedOnStateAsync - shutting down!");
                     _setupBasedOnState = false;

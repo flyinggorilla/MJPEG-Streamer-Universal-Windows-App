@@ -30,10 +30,8 @@
     <Capability Name="internetClient" />
     <Capability Name="privateNetworkClientServer" />
     <Capability Name="internetClientServer" />
-    <uap:Capability Name="picturesLibrary" />
     <!-- <rescap:Capability Name="extendedBackgroundTaskTime"/> -->
     <!--<rescap:Capability Name="extendedExecutionUnconstrained" /> -->
     <DeviceCapability Name="webcam" />
-    <DeviceCapability Name="microphone" />
   </Capabilities>
 </Package>
