@@ -562,7 +562,7 @@ namespace MJPEGStreamer
         /// <returns></returns>
         private async Task ShutdownAsync()
         {
-            Debug.WriteLine("ShutdownAsync" , new System.Diagnostics.StackTrace().ToString());
+            Debug.WriteLine("ShutdownAsync: " + new System.Diagnostics.StackTrace().ToString());
 
             if (_isInitialized)
             {
@@ -589,7 +589,7 @@ namespace MJPEGStreamer
         private async Task SetUpBasedOnStateAsync()
         {
 
-            Debug.WriteLine("Entering SetupBasedOnStateAsync()");
+            Debug.WriteLine("Entering SetupBasedOnStateAsync(): " +  new System.Diagnostics.StackTrace().ToString());
             // Avoid reentrancy: Wait until nobody else is in this function.
             while (!_setupTask.IsCompleted)
             {
@@ -619,7 +619,7 @@ namespace MJPEGStreamer
                 else if (!_setupBasedOnState)
                 {
                     Debug.WriteLine("SetupBasedOnStateAsync - setting up!");
-                    _setupBasedOnState = true;
+                    _setupBasedOnState = false;
                     await MJPEGStreamerInitAsync();
                     await InitializeCameraAsync();
 
