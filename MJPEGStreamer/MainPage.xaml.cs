@@ -254,9 +254,6 @@ namespace MJPEGStreamer
                 case ExtendedExecutionResult.Allowed:
                     Debug.WriteLine("Extended execution allowed.");
                     _extendedExecutionSession = session;
-                    _lowLagPhotoCapture = await _mediaCapture.PrepareLowLagPhotoCaptureAsync(ImageEncodingProperties.CreateJpeg());
-
-                    _periodicTimer = new Timer(OnTimerAsync, DateTime.Now, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(10));
                     break;
 
                 default:
@@ -266,68 +263,12 @@ namespace MJPEGStreamer
                     break;
             }
 
-            /*
-            var access = await BackgroundExecutionManager.RequestAccessAsync();
-
-            switch (access)
-            {
-                case BackgroundAccessStatus.Unspecified:
-                    Debug.WriteLine("BackgroundAccessStatus unspecified");
-                    break;
-                case BackgroundAccessStatus.DeniedBySystemPolicy:
-                    Debug.WriteLine("BackgroundAccessStatus denied by system policy");
-                    break;
-                case BackgroundAccessStatus.DeniedByUser:
-                    Debug.WriteLine("BackgroundAccessStatus denied by user");
-                    break;
-                case BackgroundAccessStatus.AlwaysAllowed:
-                    Debug.WriteLine("BackgroundAccessStatus always allowed");
-                    break;
-                case BackgroundAccessStatus.AllowedSubjectToSystemPolicy:
-                    Debug.WriteLine("BackgroundAccessStatus allowed subject to policy");
-                    break;
-                default:
-                    Debug.WriteLine("BackgroundAccessStatus something else" + (int)access);
-                    break;
-            }*/
-
-
-            /* var builder = new BackgroundTaskBuilder();
-             builder.Name = "MJPEGBackgroundStreamer";
-             builder.IsNetworkRequested = true;
-              ApplicationTrigger trigger = new ApplicationTrigger();
-              ValueSet valueSet = new ValueSet();
-              valueSet.Add("TestValue1", "val1");
-              builder.SetTrigger(trigger);
-              BackgroundTaskRegistration task = builder.Register();
-              Debug.WriteLine("registered builder");
-              await trigger.RequestAsync(valueSet);
-              Debug.WriteLine("awaited trigger");*/
-
             await StartServer();
             _mjpegStreamerIsInitializing = false;
 
         }
 
-        private async void OnTimerAsync(object state)
-        {
-            var startTime = (DateTime)state;
-            var runningTime = Math.Round((DateTime.Now - startTime).TotalSeconds, 0);
-            Debug.WriteLine("~" + runningTime.ToString() + "~");
-            InMemoryRandomAccessStream stream = new InMemoryRandomAccessStream();
-            var capturedPhoto = await _lowLagPhotoCapture.CaptureAsync();
-            var softwareBitmap = capturedPhoto.Frame.SoftwareBitmap;
-
-
-     //##########       await _lowLagPhotoCapture.FinishAsync();
-        }
-
-        private void SessionRevoked(object sender, ExtendedExecutionRevokedEventArgs args)
-        {
-            Debug.WriteLine("******************Session has been revoked*******************");
-        }
-
-        private void Page_Loaded(object sender, RoutedEventArgs e)
+          private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             ColumnSettings.Width = new GridLength(0);
             UpdateCaptureControls();

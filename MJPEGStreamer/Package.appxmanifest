@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" IgnorableNamespaces="uap mp">
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" xmlns:iot="http://schemas.microsoft.com/appx/manifest/iot/windows10" IgnorableNamespaces="uap mp iot">
   <Identity Name="23433flyinggorilla.MJPEGStreamer" Publisher="CN=F0964185-1BB3-4354-B1F6-74747429BC81" Version="1.1.5.0" />
   <mp:PhoneIdentity PhoneProductId="c1b68d6d-68c0-456c-9b83-cb39a531b44b" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
@@ -30,8 +30,10 @@
     <Capability Name="internetClient" />
     <Capability Name="privateNetworkClientServer" />
     <Capability Name="internetClientServer" />
+    <uap:Capability Name="picturesLibrary" />
     <!-- <rescap:Capability Name="extendedBackgroundTaskTime"/> -->
     <!--<rescap:Capability Name="extendedExecutionUnconstrained" /> -->
     <DeviceCapability Name="webcam" />
+    <DeviceCapability Name="microphone" />
   </Capabilities>
 </Package>
