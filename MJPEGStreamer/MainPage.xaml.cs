@@ -69,6 +69,9 @@ namespace MJPEGStreamer
         private int _activityCounter;
         private bool _setupBasedOnState;
         private bool _mjpegStreamerIsInitializing;
+        private ExtendedExecutionSession _extendedExecutionSession;
+        private LowLagPhotoCapture _lowLagPhotoCapture;
+        private Timer _periodicTimer;
         private const int _defaultPort = 8000;
 
         #region Constructor, lifecycle and navigation
@@ -240,13 +243,30 @@ namespace MJPEGStreamer
 
             }
 
-            ExtendedExecutionSession Session = new ExtendedExecutionSession();
-            Session.Reason = ExtendedExecutionReason.Unspecified;
-            Session.Description = "Streaming MJPEG";
-            Session.Revoked += SessionRevoked;
-            ExtendedExecutionResult result = await Session.RequestExtensionAsync();
+            ExtendedExecutionSession session = new ExtendedExecutionSession();
+            session.Reason = ExtendedExecutionReason.Unspecified;
+            session.Description = "Streaming MJPEG";
+            session.Revoked += SessionRevoked;
+            ExtendedExecutionResult result = await session.RequestExtensionAsync();
 
+            switch (result)
+            {
+                case ExtendedExecutionResult.Allowed:
+                    Debug.WriteLine("Extended execution allowed.");
+                    _extendedExecutionSession = session;
+                    _lowLagPhotoCapture = await _mediaCapture.PrepareLowLagPhotoCaptureAsync(ImageEncodingProperties.CreateJpeg());
 
+                    _periodicTimer = new Timer(OnTimerAsync, DateTime.Now, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(10));
+                    break;
+
+                default:
+                case ExtendedExecutionResult.Denied:
+                    Debug.WriteLine("Extended execution denied.");
+                    session.Dispose();
+                    break;
+            }
+
+            /*
             var access = await BackgroundExecutionManager.RequestAccessAsync();
 
             switch (access)
@@ -269,24 +289,37 @@ namespace MJPEGStreamer
                 default:
                     Debug.WriteLine("BackgroundAccessStatus something else" + (int)access);
                     break;
-            }
+            }*/
 
 
-            var builder = new BackgroundTaskBuilder();
-            builder.Name = "MJPEGBackgroundStreamer";
-            builder.IsNetworkRequested = true;
-             ApplicationTrigger trigger = new ApplicationTrigger();
-             ValueSet valueSet = new ValueSet();
-             valueSet.Add("TestValue1", "val1");
-             builder.SetTrigger(trigger);
-             BackgroundTaskRegistration task = builder.Register();
-             Debug.WriteLine("registered builder");
-             await trigger.RequestAsync(valueSet);
-             Debug.WriteLine("awaited trigger");
+            /* var builder = new BackgroundTaskBuilder();
+             builder.Name = "MJPEGBackgroundStreamer";
+             builder.IsNetworkRequested = true;
+              ApplicationTrigger trigger = new ApplicationTrigger();
+              ValueSet valueSet = new ValueSet();
+              valueSet.Add("TestValue1", "val1");
+              builder.SetTrigger(trigger);
+              BackgroundTaskRegistration task = builder.Register();
+              Debug.WriteLine("registered builder");
+              await trigger.RequestAsync(valueSet);
+              Debug.WriteLine("awaited trigger");*/
 
             await StartServer();
             _mjpegStreamerIsInitializing = false;
 
+        }
+
+        private async void OnTimerAsync(object state)
+        {
+            var startTime = (DateTime)state;
+            var runningTime = Math.Round((DateTime.Now - startTime).TotalSeconds, 0);
+            Debug.WriteLine("~" + runningTime.ToString() + "~");
+            InMemoryRandomAccessStream stream = new InMemoryRandomAccessStream();
+            var capturedPhoto = await _lowLagPhotoCapture.CaptureAsync();
+            var softwareBitmap = capturedPhoto.Frame.SoftwareBitmap;
+
+
+     //##########       await _lowLagPhotoCapture.FinishAsync();
         }
 
         private void SessionRevoked(object sender, ExtendedExecutionRevokedEventArgs args)
@@ -610,7 +643,8 @@ namespace MJPEGStreamer
 
             Func<Task> setupAsync = async () =>
             {
-                if (_isSuspending)
+                //if (!previewEnabled)
+                if(_isSuspending)
                 {
                     Debug.WriteLine("SetupBasedOnStateAsync - shutting down!");
                     _setupBasedOnState = false;
@@ -619,7 +653,8 @@ namespace MJPEGStreamer
                 else if (!_setupBasedOnState)
                 {
                     Debug.WriteLine("SetupBasedOnStateAsync - setting up!");
-                    _setupBasedOnState = false;
+                    _setupBasedOnState = true;
+
                     await MJPEGStreamerInitAsync();
                     await InitializeCameraAsync();
 
