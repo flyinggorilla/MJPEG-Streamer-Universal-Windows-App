@@ -68,6 +68,7 @@ namespace MJPEGStreamer
         private double _sourceFrameRate;
         private int _activityCounter;
         private bool _setupBasedOnState;
+        private bool _mjpegStreamerIsInitializing;
         private const int _defaultPort = 8000;
 
         #region Constructor, lifecycle and navigation
@@ -133,11 +134,13 @@ namespace MJPEGStreamer
 
         private async Task MJPEGStreamerInitAsync()
         {
-            if (_mjpegStreamerInitialized)
+            Debug.WriteLine("Trying MJPEGStreamerInitAsync");
+            if (_mjpegStreamerInitialized || _mjpegStreamerIsInitializing)
             {
                 return;
             }
             _mjpegStreamerInitialized = true;
+            _mjpegStreamerIsInitializing = true;
 
             if (_mediaCapture == null)
             {
@@ -145,7 +148,7 @@ namespace MJPEGStreamer
             }
 
 
-            Debug.WriteLine("now reading  settings");
+            Debug.WriteLine("MJPEGStreamerInitAsync: now reading  settings");
             var portSetting = _localSettings.Values["HttpServerPort"];
             if (portSetting != null)
             {
@@ -282,12 +285,13 @@ namespace MJPEGStreamer
              Debug.WriteLine("awaited trigger");
 
             await StartServer();
+            _mjpegStreamerIsInitializing = false;
 
         }
 
         private void SessionRevoked(object sender, ExtendedExecutionRevokedEventArgs args)
         {
-            throw new NotImplementedException();
+            Debug.WriteLine("******************Session has been revoked*******************");
         }
 
         private void Page_Loaded(object sender, RoutedEventArgs e)
@@ -312,23 +316,6 @@ namespace MJPEGStreamer
             {
                 await StartServer();
             }
-
-
-
-
-
-            /*base.OnBackgroundActivated(args);
-            IBackgroundTaskInstance taskInstance = args.TaskInstance;*/
-
-
-
-
-            /*
-
-
-           
-            */
-
         }
 
         private async void ColorFrameReader_FrameArrivedAsync(MediaFrameReader sender, MediaFrameArrivedEventArgs args)
@@ -542,6 +529,15 @@ namespace MJPEGStreamer
 
         }
 
+        private void CalculateAndSetFrameRate(UInt16 framerate)
+        {
+            if (framerate < 1 && framerate > 100)
+                return;
+
+            _frameRate = framerate;
+            CalculateFrameRate();
+        }
+
         private void CalculateFrameRate()
         {
  
@@ -616,11 +612,13 @@ namespace MJPEGStreamer
             {
                 if (_isSuspending)
                 {
+                    Debug.WriteLine("SetupBasedOnStateAsync - shutting down!");
                     _setupBasedOnState = false;
                     await ShutdownAsync();
                 }
                 else if (!_setupBasedOnState)
                 {
+                    Debug.WriteLine("SetupBasedOnStateAsync - setting up!");
                     _setupBasedOnState = true;
                     await MJPEGStreamerInitAsync();
                     await InitializeCameraAsync();
@@ -630,10 +628,13 @@ namespace MJPEGStreamer
 
                 }
             };
-
+            Debug.WriteLine("SetupBasedOnStateAsync -calling setup Async!");
             _setupTask = setupAsync();
+            Debug.WriteLine("SetupBasedOnStateAsync -setup Async called!");
 
             await _setupTask;
+
+            Debug.WriteLine("SetupBasedOnStateAsync - awaited setup task!");
 
             UpdateCaptureControls();
 
