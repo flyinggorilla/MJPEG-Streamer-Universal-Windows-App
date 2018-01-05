@@ -10,6 +10,7 @@ using Windows.UI.Xaml.Media;
 using Windows.UI;
 using System.Web;
 using System.Collections.Specialized;
+using Windows.UI.Core;
 
 namespace MJPEGStreamer
 {
@@ -95,6 +96,21 @@ namespace MJPEGStreamer
 
                 }
 
+                string qualityOption = query["quality"];
+                if (qualityOption != null)
+                {
+                    UInt16 fr;
+                    if (UInt16.TryParse(qualityOption, out fr))
+                    {
+                        if (fr >= 0 && fr <= 100)
+                        {
+                            ConfigureImageQuality(fr);
+                        }
+
+                    }
+
+                }
+
                 if (uri.LocalPath.Contains("image.jpg"))
                 {
                     serveSingleJpegOnly = true;
@@ -133,20 +149,21 @@ namespace MJPEGStreamer
                             Debug.WriteLine("JPEG HTTPHeader. Now sending single JPEG.");
                             try
                             {
-                                    InMemoryRandomAccessStream jpegStream;
-                                    jpegStream = _jpegStreamBuffer;
-                                    if (jpegStream != null)
-                                    {
-                                        mjpegHttpStreamer.WriteJpeg(jpegStream);
-                                    }
-                                
+                                InMemoryRandomAccessStream jpegStream;
+                                jpegStream = _jpegStreamBuffer;
+                                if (jpegStream != null)
+                                {
+                                    mjpegHttpStreamer.WriteJpeg(jpegStream);
+                                }
+
                             }
                             catch (Exception ex)
                             {
                                 Debug.WriteLine("JPEG HTTP sending aborted." + ex.ToString());
                             }
                         }
-                        else if(serveMJpegStream) {
+                        else if (serveMJpegStream)
+                        {
                             mjpegHttpStreamer.WriteMJpegHeader();
                             Debug.WriteLine("MJPEG HTTPHeader sent. Now streaming JPEGs.");
                             try
@@ -176,7 +193,8 @@ namespace MJPEGStreamer
                                 Debug.WriteLine("MJPEG HTTP Stream ended." + ex.ToString());
                             }
 
-                        } else
+                        }
+                        else
                         {
                             mjpegHttpStreamer.WriteErrorHeader();
                         }
@@ -194,6 +212,19 @@ namespace MJPEGStreamer
             Interlocked.Decrement(ref _activeStreams);
         }
 
+        private async void ConfigureImageQuality(UInt16 imageQualityPercent)
+        {
+            double imageQuality = imageQualityPercent / 100.0;
+            if (_imageQuality != imageQuality)
+            {
+                _imageQuality = imageQuality;
+                _localSettings.Values["ImageQuality"] = _imageQuality;
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                {
+                    ImageQualitySlider.Value = _imageQuality;
+                });
+            }
+        }
 
         private async Task StopServer()
         {
