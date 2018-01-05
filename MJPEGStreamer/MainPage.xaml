@@ -137,7 +137,8 @@
 
         <ContentDialog x:Name="ImportantNotesContentDialog" Visibility="Collapsed" CloseButtonText="Ok. Got it.">
             <StackPanel>
-                <TextBlock Style="{ThemeResource BaseTextBlockStyle}" Foreground="DarkRed" Text="Note: (1) minimizing this app will stop streaming JPEG data. (2) Localhost loopback will not work! You can only access this HTTP service from a remote computer due to Universal Windows App restrictions." Margin="0,0,0,12" />
+                <!-- <TextBlock Style="{ThemeResource BaseTextBlockStyle}" Foreground="DarkRed" Text="Note: (1) minimizing this app will stop streaming JPEG data. (2) Localhost loopback will not work! You can only access this HTTP service from a remote computer due to Universal Windows App restrictions." Margin="0,0,0,12" /> -->
+                <TextBlock x:Name="ImportantNotesTextBlock" Style="{ThemeResource BaseTextBlockStyle}" Foreground="DarkRed" Text="Note: (1) minimizing this app will stop streaming JPEG data. (2) Localhost loopback will not work! You can only access this HTTP service from a remote computer due to Universal Windows App restrictions." Margin="0,0,0,12" />
             </StackPanel>
         </ContentDialog>
 

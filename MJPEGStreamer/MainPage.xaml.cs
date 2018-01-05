@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Background;
 using Windows.ApplicationModel.ExtendedExecution;
+using Windows.ApplicationModel.ExtendedExecution.Foreground;
 using Windows.Devices.Enumeration;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
@@ -69,7 +70,7 @@ namespace MJPEGStreamer
         private int _activityCounter;
         private bool _setupBasedOnState;
         private bool _mjpegStreamerIsInitializing;
-        private ExtendedExecutionSession _extendedExecutionSession;
+        private ExtendedExecutionForegroundSession _extendedExecutionSession;
         private LowLagPhotoCapture _lowLagPhotoCapture;
         private Timer _periodicTimer;
         private const int _defaultPort = 8000;
@@ -540,21 +541,43 @@ namespace MJPEGStreamer
 
             Func<Task> setupAsync = async () =>
             {
-                if(!show)
+                //if(!show)
+                if (_isSuspending)
                 {
                     Debug.WriteLine("SetupBasedOnStateAsync - shutting down!");
                     _setupBasedOnState = false;
                     await ShutdownAsync();
+                    await StopServer();
                 }
                 else if (!_setupBasedOnState)
                 {
                     Debug.WriteLine("SetupBasedOnStateAsync - setting up!");
                     _setupBasedOnState = true;
 
+                    ExtendedExecutionForegroundSession newSession = new ExtendedExecutionForegroundSession();
+                    newSession.Reason = ExtendedExecutionForegroundReason.Unconstrained;
+                    newSession.Description = "Long Running Processing";
+                    newSession.Revoked += SessionRevoked;
+                    ExtendedExecutionForegroundResult result = await newSession.RequestExtensionAsync();
+                    switch (result)
+                    {
+                        case ExtendedExecutionForegroundResult.Allowed:
+                            Debug.WriteLine("Extended Execution in Foreground ALLOWED.");
+                            _extendedExecutionSession = newSession;
+                            break;
+
+                        default:
+                        case ExtendedExecutionForegroundResult.Denied:
+                            Debug.WriteLine("Extended Execution in Foreground DENIED.");
+                            break;
+                    }
+
+
                     await MJPEGStreamerInitAsync();
                     await InitializeCameraAsync();
+                    await StartServer();
 
-                    // Prevent the device from sleeping while the preview is running
+                    // Prevent the device from sleeping while running
                     _displayRequest.RequestActive();
 
                 }
@@ -569,6 +592,26 @@ namespace MJPEGStreamer
 
             UpdateCaptureControls();
 
+        }
+
+
+        private async void SessionRevoked(object sender, ExtendedExecutionForegroundRevokedEventArgs args)
+        {
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+                switch (args.Reason)
+                {
+                    case ExtendedExecutionForegroundRevokedReason.Resumed:
+                        Debug.WriteLine("Extended execution revoked due to returning to foreground.");
+                        break;
+
+                    case ExtendedExecutionForegroundRevokedReason.SystemPolicy:
+                        Debug.WriteLine("Extended execution revoked due to system policy.");
+                        break;
+                }
+
+               // EndExtendedExecution();
+            });
         }
 
         /// <summary>
@@ -774,6 +817,10 @@ namespace MJPEGStreamer
 
         private async void ImportantNotesButton_ClickedAsync(object sender, RoutedEventArgs e)
         {
+            ImportantNotesTextBlock.Text = "Note: Localhost loopback will not work! " +
+                "You can only access this HTTP service from a remote computer due to Universal Windows App restrictions. \r\n" +
+                "MJPEG streaming URL http://<hostname>:" + _httpServerPort + "/stream.mjpeg \r\n" +
+                "JPG single image request http://<hostname>:" + _httpServerPort + "/image.jpg";
             ImportantNotesContentDialog.Visibility = Visibility.Visible;
             await ImportantNotesContentDialog.ShowAsync();
             Debug.WriteLine("Important Notes button clicked");

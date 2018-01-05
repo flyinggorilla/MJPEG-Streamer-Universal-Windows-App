@@ -72,7 +72,7 @@ namespace MJPEGStreamer
                 }
 
                 int httpPos = request.LastIndexOf(" HTTP/");
-                if (httpPos < 6)
+                if (httpPos < 5)
                 {
                     throw new Exception("No valid HTTP Requst.");
                 }
