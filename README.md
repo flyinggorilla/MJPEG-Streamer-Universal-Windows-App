@@ -43,6 +43,15 @@ Retrieves a single JPEG image. This should work in any browser.
 http://<remotehost>:8000/image.jpg
 ```
 
+## Build Instructions
+The build is fairly straigtforward as there arent any 3rd party dependencies. Get the folder from Github and run Visual Studio. Thats it.
+
+1. You will need a Windows 10 computer to build MPEGStreamer UWP App for Windows 10. (I built on Fall Creators update. Earlier versions might work too, but that needs changes in the solutions manifest.)
+1. Download and install Visual Studio 2017 Community Edition if you dont have it or a premium variant of it. 
+1. Open the .sln and build your target to test it
+1. Once its working, go to Menu "Project->Store->Create App Packages...". You then select "No" to not upload the package to the store. Start the build process.
+1. Once the build completed, you will find resulting package in ``MPEGStreamer\AppPackages\MJPEGStreamer_1.1.x.0_Test``. Copy this folder to the computer with the Webcam that you want to stream. Launch ``Add-AppDevPackage.ps1`` using the File Explorers context Menu "Run with PowerShell". This will ask for proper permissions and install the app.
+1. Note that previous step might need Sideload apps or Developer mode permission activated, which you find in the Windows 10 settings->Update&Security->For developers area.
 
 
 
