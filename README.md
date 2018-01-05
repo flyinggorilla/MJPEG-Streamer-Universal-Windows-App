@@ -24,18 +24,24 @@ So use only on your local intranet and not as a service to public internet users
 
 ### remote configuration 
 Remote configuration of a running MJPEG Streamer app. impacts all streams.
-```http://<remotehost>:8000/configure?quality=30&framerate=5```
+```http
+http://<remotehost>:8000/configure?quality=30&framerate=5
+```
 
 * quality: 0..100, 0 is max compression, 100 is largest JPEG
 * framerate: 1..30 per second
 
 ### MJPEG stream
 The MPEG stream over HTTP. It is streamed in the same format as the Linux mjpg-streamer to be compatible with common webcam stream receivers.
-```http://<remotehost>:8000/stream.mjpeg```
+```http
+http://<remotehost>:8000/stream.mjpeg
+```
 
 ### JPEG image
 Retrieves a single JPEG image. This should work in any browser.
-```http://<remotehost>:8000/image.jpg```
+```http
+http://<remotehost>:8000/image.jpg
+```
 
 
 
