@@ -1,5 +1,12 @@
 # MJPEG-Streamer-Universal-Windows-App
 Streams USB and bulit-in camera video as MJPEG data over HTTP. JPG retrieval of single images is implemented too.
+* image rotation
+* internal and USB camera support
+* JPEG compression level
+* frame rate
+* MJPEG over HTTP
+* JPEG over HTTP
+* auto-stores last config
 
 Developed as Windows 10 Universal App in C#. 
 
