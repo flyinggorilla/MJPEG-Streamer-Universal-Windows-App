@@ -20,7 +20,7 @@ namespace MJPEGStreamer
         public const string _boundary = "MJPEGStreamerboundary";
         public Stream _httpSocketStream = null; 
 
-        public void WriteHeader()
+        public void WriteMJpegHeader()
         {
             Write(
                     "HTTP/1.0 200 OK\r\n" +
@@ -34,7 +34,27 @@ namespace MJPEGStreamer
             this._httpSocketStream.Flush();
        }
 
-        public void Write(InMemoryRandomAccessStream imageStream)
+        public void WriteJpegHeader()
+        {
+            Write(
+                    "HTTP/1.0 200 OK\r\n" +
+                    "Pragma: no-cache\r\n" + 
+                    "Server: MJPEGStreamer/0.0.1\r\n" +
+                    "cache-control: private, max-age=0, no-cache, no-store\r\n" + 
+                    "Content-Type: image/jpeg\r\n"
+                 );
+
+            this._httpSocketStream.Flush();
+        }
+
+        public void WriteErrorHeader()
+        {
+            Write("HTTP/1.0 404 NotFound\r\n\r\n");
+            _httpSocketStream.Flush();
+            _httpSocketStream.Close();
+        }
+
+        public void WriteMJpeg(InMemoryRandomAccessStream imageStream)
         {
 
             StringBuilder sb = new StringBuilder();
@@ -54,6 +74,17 @@ namespace MJPEGStreamer
             
             _httpSocketStream.Flush();
 
+        }
+
+        public void WriteJpeg(InMemoryRandomAccessStream imageStream)
+        {
+
+            Write("Content-Length: " + imageStream.Size.ToString() + "\r\n\r\n");
+            Stream s = imageStream.AsStreamForRead();
+            s.Position = 0;
+            s.CopyTo(_httpSocketStream);
+            _httpSocketStream.Flush();
+            _httpSocketStream.Close();
         }
 
         private void Write(string text)
