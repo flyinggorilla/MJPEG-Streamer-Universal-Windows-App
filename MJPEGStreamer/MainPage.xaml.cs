@@ -457,12 +457,9 @@ namespace MJPEGStreamer
             Debug.WriteLine("MediaFrameReader StartAsync done ");
 
             Debug.WriteLine("MediaFrameCapture Formats");
-            CameraResolutionBox.Items.Clear();
             CameraFormatBox.Items.Clear();
             foreach (var SupportedFormat in _mediaFrameSource.SupportedFormats)
             {
-                if (!CameraResolutionBox.Items.Contains(SupportedFormat.VideoFormat.Width + " x " + SupportedFormat.VideoFormat.Height))
-                    CameraResolutionBox.Items.Add(SupportedFormat.VideoFormat.Width + " x " + SupportedFormat.VideoFormat.Height);
                 if (!CameraFormatBox.Items.Contains(SupportedFormat.Subtype))
                     CameraFormatBox.Items.Add(SupportedFormat.Subtype);
                 Debug.WriteLine("" + SupportedFormat.Subtype + " " + SupportedFormat.VideoFormat.Height + " " + SupportedFormat.VideoFormat.Width + " " + SupportedFormat.FrameRate.Numerator / SupportedFormat.FrameRate.Denominator);
@@ -925,6 +922,12 @@ namespace MJPEGStreamer
 
         private void CameraFormatBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            CameraResolutionBox.Items.Clear();
+            foreach (var SupportedFormat in _mediaFrameSource.SupportedFormats)
+            {
+                if (CameraFormatBox.SelectedValue.Equals(SupportedFormat.Subtype) && !CameraResolutionBox.Items.Contains(SupportedFormat.VideoFormat.Width + " x " + SupportedFormat.VideoFormat.Height))
+                    CameraResolutionBox.Items.Add(SupportedFormat.VideoFormat.Width + " x " + SupportedFormat.VideoFormat.Height);
+            }
             FormatChange();
         }
 
