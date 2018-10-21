@@ -190,6 +190,9 @@
             <Slider x:Name="FrameRateSlider" TickFrequency="10" TickPlacement="Outside" Minimum="1" Maximum="30" StepFrequency="1" SmallChange="1" LargeChange="1" Value="5" LostFocus="FrameRateSlider_LostFocus" ValueChanged="FrameRateSlider_ValueChanged" ></Slider>
             <ToggleSwitch x:Name="PreviewToggleSwitch" Header="Preview" OffContent="save CPU cycles" OnContent="see what you get" Toggled="PreviewToggleSwitch_Toggled" />
             <ComboBox x:Name="CameraComboBox" Header="Camera" SelectionChanged="CameraComboBox_SelectionChanged" LostFocus="CameraComboBox_LostFocus" DropDownOpened="CameraComboBox_DropDownOpened" HorizontalAlignment="Stretch" />
+            <media:ComboBox x:Name="CameraResolutionBox" Header="Resolution" SelectionChanged="CameraResolution_SelectionChanged" LostFocus="CameraComboBox_LostFocus" DropDownOpened="CameraResolution_DropDownOpened" HorizontalAlignment="Stretch" Margin="0,5,0,0" VerticalAlignment="Center" />
+            <media:ComboBox x:Name="CameraFormatBox" Header="Format" SelectionChanged="CameraFormatBox_SelectionChanged" HorizontalAlignment="Stretch" Margin="0,5,0,0" VerticalAlignment="Stretch"/>
+
         </StackPanel>
         <StackPanel Grid.Column="1" VerticalAlignment="Bottom">
             <!-- <TextBlock TextWrapping="WrapWholeWords" Text="Note: minimizing this app as well as the screen-saver will stop streaming JPEG data. It is recommended to not enter sleep mode when on power as well as not start the screen saver when on power. WARNING: you can only access this app from a remote computer. Localhost loopback will not work!" Foreground="DarkRed" VerticalAlignment="Bottom" FontSize="10" Margin="10,10,10,10"></TextBlock>-->
