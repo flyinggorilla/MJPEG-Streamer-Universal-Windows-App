@@ -1,15 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel;
-using Windows.ApplicationModel.Background;
-using Windows.ApplicationModel.ExtendedExecution;
 using Windows.ApplicationModel.ExtendedExecution.Foreground;
 using Windows.Devices.Enumeration;
 using Windows.Foundation;
-using Windows.Foundation.Collections;
 using Windows.Graphics.Imaging;
 using Windows.Media;
 using Windows.Media.Capture;
@@ -74,6 +70,7 @@ namespace MJPEGStreamer
         private LowLagPhotoCapture _lowLagPhotoCapture;
         private Timer _periodicTimer;
         private const int _defaultPort = 8000;
+        private MediaFrameSource _mediaFrameSource;
 
         #region Constructor, lifecycle and navigation
 
@@ -200,14 +197,15 @@ namespace MJPEGStreamer
             {
                 Debug.WriteLine("preview setting found: " + (bool)preview);
                 _previewVideoEnabled = (bool)preview;
-            } else
+            }
+            else
             {
                 Debug.WriteLine("no Preview setting found, setting to default ON.");
                 _previewVideoEnabled = true;
             }
             PreviewToggleSwitch.IsOn = _previewVideoEnabled;
             UpdatePreviewState();
-          
+
 
             _allVideoDevices = await DeviceInformation.FindAllAsync(DeviceClass.VideoCapture);
             var id = _localSettings.Values["CurrentVideoDeviceId"];
@@ -249,7 +247,7 @@ namespace MJPEGStreamer
 
         }
 
-          private void Page_Loaded(object sender, RoutedEventArgs e)
+        private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             ColumnSettings.Width = new GridLength(0);
             UpdateCaptureControls();
@@ -267,7 +265,8 @@ namespace MJPEGStreamer
             {
                 await StopServer();
 
-            } else
+            }
+            else
             {
                 await StartServer();
             }
@@ -305,7 +304,7 @@ namespace MJPEGStreamer
                 bitmapEncoder.SetSoftwareBitmap(softwareBitmap);
                 await bitmapEncoder.FlushAsync();
 
-                
+
                 if (_activityCounter++ > 50)
                 {
                     Debug.WriteLine(".");
@@ -323,8 +322,8 @@ namespace MJPEGStreamer
                     var task = imageElement.Dispatcher.RunAsync(CoreDispatcherPriority.Normal,
                         async () =>
                         {
-                        // Don't let two copies of this task run at the same time.
-                        if (taskRunning)
+                            // Don't let two copies of this task run at the same time.
+                            if (taskRunning)
                             {
                                 return;
                             }
@@ -339,7 +338,8 @@ namespace MJPEGStreamer
                                     await bitmapImage.SetSourceAsync(imageElementJpegStream);
                                     imageElement.Source = bitmapImage;
                                 }
-                            } catch (Exception imageElementException)
+                            }
+                            catch (Exception imageElementException)
                             {
                                 Debug.WriteLine("Image Element writing exception. " + imageElementException.Message);
                             }
@@ -421,12 +421,14 @@ namespace MJPEGStreamer
                 return;
             }
 
-            MediaCaptureInitializationSettings mediaSettings = new MediaCaptureInitializationSettings();
-            mediaSettings.VideoDeviceId = storedVideoDeviceId.ToString();
-            mediaSettings.SourceGroup = mediaFrameSourceGroup;
-            mediaSettings.StreamingCaptureMode = StreamingCaptureMode.Video;
-            mediaSettings.SharingMode = MediaCaptureSharingMode.ExclusiveControl;
-            mediaSettings.MemoryPreference = MediaCaptureMemoryPreference.Cpu;
+            MediaCaptureInitializationSettings mediaSettings = new MediaCaptureInitializationSettings
+            {
+                VideoDeviceId = storedVideoDeviceId.ToString(),
+                SourceGroup = mediaFrameSourceGroup,
+                StreamingCaptureMode = StreamingCaptureMode.Video,
+                SharingMode = MediaCaptureSharingMode.ExclusiveControl,
+                MemoryPreference = MediaCaptureMemoryPreference.Cpu
+            };
 
 
             try
@@ -435,24 +437,36 @@ namespace MJPEGStreamer
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine("MediaCapture initialization failed: " + ex.Message);
+                Debug.WriteLine("MediaCapture initialization failed: " + ex.Message);
                 return;
             }
             Debug.WriteLine("MediaFrameCapture initialized");
 
-            var mediaFrameSource = _mediaCapture.FrameSources[selectedMediaFrameSourceInfo.Id];
+            _mediaFrameSource = _mediaCapture.FrameSources[selectedMediaFrameSourceInfo.Id];
 
             imageElement.Source = new SoftwareBitmapSource();
 
-            MediaRatio mediaRatio = mediaFrameSource.CurrentFormat.VideoFormat.MediaFrameFormat.FrameRate;
-            _sourceFrameRate = (double)mediaRatio.Numerator / (double)mediaRatio.Denominator;
+            MediaRatio mediaRatio = _mediaFrameSource.CurrentFormat.VideoFormat.MediaFrameFormat.FrameRate;
+            _sourceFrameRate = mediaRatio.Numerator / (double)mediaRatio.Denominator;
             CalculateFrameRate();
-      
-            _mediaFrameReader = await _mediaCapture.CreateFrameReaderAsync(mediaFrameSource, MediaEncodingSubtypes.Argb32);
+
+            _mediaFrameReader = await _mediaCapture.CreateFrameReaderAsync(_mediaFrameSource, MediaEncodingSubtypes.Argb32);
             _mediaFrameReader.AcquisitionMode = MediaFrameReaderAcquisitionMode.Realtime;
             _mediaFrameReader.FrameArrived += ColorFrameReader_FrameArrivedAsync;
             await _mediaFrameReader.StartAsync();
             Debug.WriteLine("MediaFrameReader StartAsync done ");
+
+            Debug.WriteLine("MediaFrameCapture Formats");
+            CameraFormatBox.Items.Clear();
+            foreach (var SupportedFormat in _mediaFrameSource.SupportedFormats)
+            {
+                if (!CameraFormatBox.Items.Contains(SupportedFormat.Subtype))
+                    CameraFormatBox.Items.Add(SupportedFormat.Subtype);
+                Debug.WriteLine("" + SupportedFormat.Subtype + " " + SupportedFormat.VideoFormat.Height + " " + SupportedFormat.VideoFormat.Width + " " + SupportedFormat.FrameRate.Numerator / SupportedFormat.FrameRate.Denominator);
+            }
+
+            CameraFormatBox.SelectedValue = _mediaFrameSource.CurrentFormat.Subtype;
+            CameraResolutionBox.SelectedValue = _mediaFrameSource.CurrentFormat.VideoFormat.Width + " x " + _mediaFrameSource.CurrentFormat.VideoFormat.Height;
 
             _isInitialized = true;
             UpdateCaptureControls();
@@ -471,15 +485,16 @@ namespace MJPEGStreamer
 
         private void CalculateFrameRate()
         {
- 
+
             if (_sourceFrameRate < 1)
             {
                 _skipFrameCount = 0;
-            } else
-            {
-                _skipFrameCount = (int)(_sourceFrameRate/_frameRate - 0.5);
             }
-            
+            else
+            {
+                _skipFrameCount = (int)(_sourceFrameRate / _frameRate - 0.5);
+            }
+
             if (_skipFrameCount > 300 || _skipFrameCount < 0)
             {
                 _skipFrameCount = 0;
@@ -487,7 +502,7 @@ namespace MJPEGStreamer
             Debug.WriteLine("Target framerate: " + _frameRate + " Source framerate: " + _sourceFrameRate + " Skip frames count: " + _skipFrameCount);
         }
 
-          /// <summary>
+        /// <summary>
         /// Cleans up the camera resources (after stopping any video recording and/or preview if necessary) and unregisters from MediaCapture events
         /// </summary>
         /// <returns></returns>
@@ -520,7 +535,7 @@ namespace MJPEGStreamer
         private async Task SetUpBasedOnStateAsync()
         {
 
-            Debug.WriteLine("Entering SetupBasedOnStateAsync(): " +  new System.Diagnostics.StackTrace().ToString());
+            Debug.WriteLine("Entering SetupBasedOnStateAsync(): " + new System.Diagnostics.StackTrace().ToString());
             // Avoid reentrancy: Wait until nobody else is in this function.
             while (!_setupTask.IsCompleted)
             {
@@ -536,7 +551,7 @@ namespace MJPEGStreamer
             if (_previewVideoEnabled != show)
             {
                 _previewVideoEnabled = show;
-                PreviewToggleSwitch.IsOn = show;               
+                PreviewToggleSwitch.IsOn = show;
             }
 
             Func<Task> setupAsync = async () =>
@@ -610,7 +625,7 @@ namespace MJPEGStreamer
                         break;
                 }
 
-               // EndExtendedExecution();
+                // EndExtendedExecution();
             });
         }
 
@@ -650,7 +665,7 @@ namespace MJPEGStreamer
 
         private void SettingsButton_Clicked(object sender, RoutedEventArgs e)
         {
-        
+
             _settingsPaneVisible = !_settingsPaneVisible;
             if (_settingsPaneVisible)
             {
@@ -750,7 +765,7 @@ namespace MJPEGStreamer
             }
 
 
-  
+
         }
 
         private int validatePortNumber(String portString)
@@ -898,6 +913,51 @@ namespace MJPEGStreamer
                     SettingsButton_Clicked(sender, e);
                 }
             }
+        }
+
+        private void CameraResolution_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            FormatChange();
+        }
+
+        private void CameraFormatBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            CameraResolutionBox.Items.Clear();
+            foreach (var SupportedFormat in _mediaFrameSource.SupportedFormats)
+            {
+                if (CameraFormatBox.SelectedValue.Equals(SupportedFormat.Subtype) && !CameraResolutionBox.Items.Contains(SupportedFormat.VideoFormat.Width + " x " + SupportedFormat.VideoFormat.Height))
+                    CameraResolutionBox.Items.Add(SupportedFormat.VideoFormat.Width + " x " + SupportedFormat.VideoFormat.Height);
+            }
+            FormatChange();
+        }
+
+        private async void FormatChange()
+        {
+            if (CameraFormatBox.SelectedItem == null || CameraResolutionBox.SelectedItem == null) return;
+            foreach (var SupportedFormat in _mediaFrameSource.SupportedFormats)
+            {
+                if (SupportedFormat.Subtype.Equals(CameraFormatBox.SelectedItem))
+                {
+                    if (CameraResolutionBox.SelectedItem.ToString().Contains(SupportedFormat.VideoFormat.Width.ToString()))
+                    {
+                        try
+                        {
+                            await _mediaFrameSource.SetFormatAsync(SupportedFormat);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine("MediaCapture set format failed: " + ex.Message);
+                            return;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        private void CameraResolution_DropDownOpened(object sender, object e)
+        {
+
         }
     }
 }
